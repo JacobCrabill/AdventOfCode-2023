@@ -10,6 +10,8 @@ const ns2sec = utils.ns2sec;
 const test_input = Data.test_input;
 const input = Data.input;
 
+const log = std.log.scoped(.aoc);
+
 pub fn main() !void {
     var gpa = GPA(.{}){};
     var alloc = gpa.allocator();
@@ -17,28 +19,32 @@ pub fn main() !void {
     var T = try std.time.Timer.start();
 
     var res1 = try part1(input, alloc);
-    std.debug.print("Part1: {d}\n", .{res1});
-    std.debug.print("Part 1 took {d:.6}s\n", .{ns2sec(T.lap())});
+    log.info("Part1: {d}", .{res1});
+    log.info("Part 1 took {d:.6}s", .{ns2sec(T.lap())});
 
     var res2 = try part2(input, alloc);
-    std.debug.print("Part2: {d}\n", .{res2});
-    std.debug.print("Part 2 took {d:.6}s\n", .{ns2sec(T.lap())});
+    log.info("Part2: {d}", .{res2});
+    log.info("Part 2 took {d:.6}s", .{ns2sec(T.lap())});
 }
 
 // ------------ Tests ------------
 
 test "part1 test input" {
+    log.warn(" -- Running Tests --", .{}); // First line of test output is confusingly prepended with `run test: error:`
+
+    const answer: usize = 0;
     var alloc = std.testing.allocator;
     var res = try part1(test_input, alloc);
-    std.debug.print("[Test] Part 1: {d}\n", .{res});
-    try std.testing.expect(res == 0);
+    log.warn("[Test] Part 1: {d}", .{res});
+    try std.testing.expect(res == answer);
 }
 
 test "part2 test input" {
+    const answer: usize = 0;
     var alloc = std.testing.allocator;
     var res = try part2(test_input, alloc);
-    std.debug.print("[Test] Part 2: {d}\n", .{res});
-    try std.testing.expect(res == 0);
+    log.warn("[Test] Part 2: {d}", .{res});
+    try std.testing.expect(res == answer);
 }
 
 // ------------ Part 1 Solution ------------
@@ -54,4 +60,3 @@ pub fn part2(_: []const u8, _: Allocator) !usize {
 }
 
 // ------------ Common Functions ------------
-

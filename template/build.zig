@@ -16,7 +16,7 @@ pub fn build(b: *std.Build) void {
     const exe = b.addExecutable(.{
         .name = "dayX",
         .root_source_file = .{ .path = "src/main.zig" },
-        .optimize = optimize,
+        .optimize = .ReleaseSafe, // Just set ReleaseSafe; not much use in Debug
         .target = target,
     });
     exe.addModule(data.name, data.module);
