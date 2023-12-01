@@ -35,15 +35,14 @@ test "part1 test input" {
 
 test "part2 test input" {
     var alloc = std.testing.allocator;
-    var res = try part2(Data.test2, alloc);
+    var res = try part2(Data.test_input2, alloc);
     std.debug.print("[Test] Part 2: {d}\n", .{res});
     try std.testing.expect(res == 281);
 }
 
 // ------------ Part 1 Solution ------------
 
-pub fn part1(input: []const u8, alloc: Allocator) !usize {
-    _ = alloc;
+pub fn part1(input: []const u8, _: Allocator) !usize {
     var lines = std.mem.split(u8, input, "\n");
 
     var sum: usize = 0;
@@ -52,15 +51,12 @@ pub fn part1(input: []const u8, alloc: Allocator) !usize {
         var first: ?u8 = null;
         var last: ?u8 = null;
         for (line) |c| {
-            switch (c) {
-                '0'...'9' => {
-                    if (first == null) {
-                        first = c - '0';
-                    } else {
-                        last = c - '0';
-                    }
-                },
-                else => {},
+            if (std.ascii.isDigit(c)) {
+                if (first == null) {
+                    first = c - '0';
+                } else {
+                    last = c - '0';
+                }
             }
         }
 
@@ -76,8 +72,7 @@ pub fn part1(input: []const u8, alloc: Allocator) !usize {
 
 // ------------ Part 2 Solution ------------
 
-pub fn part2(input: []const u8, alloc: Allocator) !usize {
-    _ = alloc;
+pub fn part2(input: []const u8, _: Allocator) !usize {
     var lines = std.mem.split(u8, input, "\n");
 
     const nums = [_][]const u8{ "one", "two", "three", "four", "five", "six", "seven", "eight", "nine" };
@@ -99,16 +94,14 @@ pub fn part2(input: []const u8, alloc: Allocator) !usize {
                     }
                 }
             }
+
             // Check for digit
-            switch (c) {
-                '0'...'9' => {
-                    if (first == null) {
-                        first = c - '0';
-                    } else {
-                        last = c - '0';
-                    }
-                },
-                else => {},
+            if (std.ascii.isDigit(c)) {
+                if (first == null) {
+                    first = c - '0';
+                } else {
+                    last = c - '0';
+                }
             }
         }
 
@@ -121,5 +114,3 @@ pub fn part2(input: []const u8, alloc: Allocator) !usize {
     }
     return sum;
 }
-
-// ------------ Common Functions ------------
