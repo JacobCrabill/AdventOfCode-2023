@@ -201,4 +201,5 @@ test "tokenize uses any delim and skips empties" {
     try std.testing.expectEqualSlices(u8, "def", tokenizeLast(input, delim).?);
     try std.testing.expectEqualSlices(u8, "abc", tokenizeFirst(input, delim).?);
     try std.testing.expectEqualSlices(u8, "123", tokenizeN(input, delim, 1).?);
+    try std.testing.expectEqualSlices(u8, "def", tokenizeN(input, delim, 2).?);
 }

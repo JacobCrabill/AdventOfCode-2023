@@ -35,17 +35,25 @@ zig build test # Build and run the tests
 zig build run  # Build and run main()
 ```
 
-Sample output:
+Sample output for unit tests:
 
 ```sh
-AdventOfCode2023/5$ zig build test
+AdventOfCode2023/5$ zig build test --summary all
 run test: error: [aoc] (warn): -- Running Tests --
 [aoc] (warn): [Test] Part 1: 0
 [aoc] (warn): [Test] Part 2: 0
-AdventOfCode2023/5$ 
+Build Summary: 3/3 steps succeeded; 2/2 tests passed
+test success
+└─ run test 2 passed 829us MaxRSS:1M
+   └─ zig test Debug native cached 5ms MaxRSS:36M
+```
+
+Sample output for for the full input:
+
+```sh
 AdventOfCode2023/5$ zig build run
-info(aoc): Part1: 0
+info(aoc): Part 1 answer: << 0 >>
 info(aoc): Part 1 took 0.000010s
-info(aoc): Part2: 0
+info(aoc): Part 2 answer: << 0 >>
 info(aoc): Part 2 took 0.000004s
 ```

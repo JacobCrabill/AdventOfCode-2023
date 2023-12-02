@@ -18,11 +18,11 @@ pub fn main() !void {
     var T = try std.time.Timer.start();
 
     const res1 = try part1(Data.input, alloc);
-    log.info("Part 1 answer: {d}", .{res1});
+    log.info("Part 1 answer: << {d} >>", .{res1});
     log.info("Part 1 took {d:.6}s", .{ns2sec(T.lap())});
 
     const res2 = try part2(Data.input, alloc);
-    log.info("Part 2 answer: {d}", .{res2});
+    log.info("Part 2 answer: << {d} >>", .{res2});
     log.info("Part 2 took {d:.6}s", .{ns2sec(T.lap())});
 }
 
