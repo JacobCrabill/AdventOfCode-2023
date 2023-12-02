@@ -1,5 +1,80 @@
 const std = @import("std");
 
+const TokenIterator = std.mem.TokenIterator(u8, .any);
+const SplitIterator = std.mem.SplitIterator(u8, .sequence);
+
+/// Split the input by newline chars "\n"
+/// Note: This keeps empty lines
+pub fn lines(input: []const u8) SplitIterator {
+    return std.mem.split(u8, input, "\n");
+}
+
+pub fn split(input: []const u8, delim: []const u8) SplitIterator {
+    return std.mem.splitSequence(u8, input, delim);
+}
+
+/// Return the first item of the split
+pub fn splitFirst(input: []const u8, delim: []const u8) ?[]const u8 {
+    var iter = split(input, delim);
+    return iter.next();
+}
+
+/// Return the last item of the split
+pub fn splitLast(input: []const u8, delim: []const u8) ?[]const u8 {
+    var last: ?[]const u8 = null;
+    var iter = split(input, delim);
+    while (iter.next()) |item| {
+        last = item;
+    }
+    return last;
+}
+
+/// Return the Nth item of the split
+pub fn splitN(input: []const u8, delim: []const u8, idx: usize) ?[]const u8 {
+    var last: ?[]const u8 = null;
+    var iter = split(input, delim);
+    var i: usize = 0;
+    while (iter.next()) |item| {
+        if (i > idx) break;
+        last = item;
+        i += 1;
+    }
+    return last;
+}
+
+pub fn tokenize(input: []const u8, delim: []const u8) TokenIterator {
+    return std.mem.tokenizeAny(u8, input, delim);
+}
+
+/// Return the first item of the tokenization
+pub fn tokenizeFirst(input: []const u8, delim: []const u8) ?[]const u8 {
+    var iter = tokenize(input, delim);
+    return iter.next();
+}
+
+/// Return the last item of the tokenization
+pub fn tokenizeLast(input: []const u8, delim: []const u8) ?[]const u8 {
+    var last: ?[]const u8 = null;
+    var iter = tokenize(input, delim);
+    while (iter.next()) |item| {
+        last = item;
+    }
+    return last;
+}
+
+/// Return the Nth item of the tokenization
+pub fn tokenizeN(input: []const u8, delim: []const u8, idx: usize) ?[]const u8 {
+    var last: ?[]const u8 = null;
+    var iter = tokenize(input, delim);
+    var i: usize = 0;
+    while (iter.next()) |item| {
+        if (i > idx) break;
+        last = item;
+        i += 1;
+    }
+    return last;
+}
+
 // Convert timer value to seconds (float)
 pub fn ns2sec(nanos: u64) f64 {
     return @as(f64, @floatFromInt(nanos)) / 1.0e9;
@@ -83,9 +158,6 @@ test "AutoHashMap set test" {
     try set.put(50);
     try set.put(8);
 
-    std.debug.print("count: {d}\n", .{set.count()});
-    std.debug.print("capacity: {d}\n", .{set.capacity()});
-
     try std.testing.expect(set.count() == 3);
     try std.testing.expect(set.capacity() == 8);
     try std.testing.expect(set.contains(8));
@@ -95,4 +167,38 @@ test "AutoHashMap set test" {
     try std.testing.expect(set.pop(10) == true);
     try std.testing.expect(set.pop(10) == false);
     try std.testing.expect(set.count() == 2);
+}
+
+test "split First/Last/N" {
+    const input = "abc, 123, def";
+
+    try std.testing.expectEqualSlices(u8, "def", splitLast(input, ", ").?);
+    try std.testing.expectEqualSlices(u8, "abc", splitFirst(input, ", ").?);
+    try std.testing.expectEqualSlices(u8, "123", splitN(input, ", ", 1).?);
+}
+
+test "split uses full delim and keeps empties" {
+    const input = "abc,123, , def";
+    const delim = ", ";
+
+    try std.testing.expectEqualSlices(u8, "def", splitLast(input, delim).?);
+    try std.testing.expectEqualSlices(u8, "abc,123", splitFirst(input, delim).?);
+    try std.testing.expectEqualSlices(u8, "", splitN(input, delim, 1).?);
+}
+
+test "tokenize First/Last/N" {
+    const input = "abc, 123, def";
+
+    try std.testing.expectEqualSlices(u8, "def", tokenizeLast(input, ", ").?);
+    try std.testing.expectEqualSlices(u8, "abc", tokenizeFirst(input, ", ").?);
+    try std.testing.expectEqualSlices(u8, "123", tokenizeN(input, ", ", 1).?);
+}
+
+test "tokenize uses any delim and skips empties" {
+    const input = "abc,123, , def";
+    const delim = ", ";
+
+    try std.testing.expectEqualSlices(u8, "def", tokenizeLast(input, delim).?);
+    try std.testing.expectEqualSlices(u8, "abc", tokenizeFirst(input, delim).?);
+    try std.testing.expectEqualSlices(u8, "123", tokenizeN(input, delim, 1).?);
 }
