@@ -64,20 +64,18 @@ pub fn part1(input: []const u8, alloc: Allocator) !usize {
     while (lines.next()) |line| {
         if (line.len < 10) continue;
 
-        // Skip the game label
-        var game_it = std.mem.split(u8, line, ":");
-        _ = game_it.next().?;
+        // Skip the game label to get the games list
+        var game_s = utils.splitLast(line, ":").?;
+        var games = utils.split(game_s, ";");
 
-        // Get the games lists
-        var game_s = game_it.next().?;
-        var games = std.mem.split(u8, game_s, ";");
         var possible: bool = true;
         while (games.next()) |game| {
             // Parse a single "game" round: '<number> <color>, '
-            var cubes = std.mem.tokenize(u8, game, ", ");
+            var cubes = utils.tokenize(game, ", ");
             while (cubes.next()) |cube_val| {
                 var count: usize = try std.fmt.parseInt(u8, cube_val, 10);
                 var color = cubes.next().?;
+
                 if (count > limits.get(color).?) {
                     possible = false;
                 }
@@ -106,17 +104,13 @@ pub fn part2(input: []const u8, _: Allocator) !usize {
         var green_min: usize = 0;
         var blue_min: usize = 0;
 
-        // Skip the game label
-        var game_it = std.mem.split(u8, line, ":");
-        _ = game_it.next().?;
-
-        // Get the games lists
-        var game_s = game_it.next().?;
+        // Skip the game label to get the games list
+        var game_s = utils.splitLast(line, ":").?;
         var games = std.mem.split(u8, game_s, ";");
 
         while (games.next()) |game| {
-            // Parse a single "game" round: 'number color, '
-            var cubes = std.mem.tokenize(u8, game, ", ");
+            // Parse a single "game" round: '<number> <color>, '
+            var cubes = utils.tokenize(game, ", ");
             while (cubes.next()) |cube_val| {
                 var count: usize = try std.fmt.parseInt(u8, cube_val, 10);
                 var color = cubes.next().?;
