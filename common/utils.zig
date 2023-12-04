@@ -9,6 +9,16 @@ pub fn lines(input: []const u8) SplitIterator {
     return std.mem.split(u8, input, "\n");
 }
 
+pub fn lineCount(input: []const u8) usize {
+    var line_iter = lines(input);
+    var count: usize = 0;
+    while (line_iter.next()) |line| {
+        if (line.len == 0) break;
+        count += 1;
+    }
+    return count;
+}
+
 pub fn split(input: []const u8, delim: []const u8) SplitIterator {
     return std.mem.splitSequence(u8, input, delim);
 }
