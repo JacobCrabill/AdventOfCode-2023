@@ -71,7 +71,6 @@ fn mapValue(in: usize, map: Mapping) SeedMap {
         .default = true,
     };
 
-    // std.debug.print("{d}, {d}, {d}\n", .{ in, map.src_start, map.src_start + map.length });
     if (in >= map.src_start and in < map.src_start + map.length) {
         mapping.output = map.dst_start + (in - map.src_start);
         mapping.default = false;
@@ -131,6 +130,57 @@ fn parseMapping(alloc: Allocator, input: []const u8, seeds: []usize, tag: []cons
     return outputs;
 }
 
+fn parseMappings(alloc: Allocator, input: []const u8, tag: []const u8) !ArrayList(Mapping) {
+    var lines = utils.lines(input);
+    _ = lines.next(); // skip the seeds row
+
+    while (lines.next()) |line| {
+        if (std.mem.startsWith(u8, line, tag)) break;
+    }
+
+    var mappings = ArrayList(Mapping).init(alloc);
+
+    // parse the map
+    while (lines.next()) |line| {
+        if (line.len == 0) break;
+        var nums = utils.tokenize(line, " \n");
+        var dst = try std.fmt.parseInt(usize, nums.next().?, 10);
+        var src = try std.fmt.parseInt(usize, nums.next().?, 10);
+        var len = try std.fmt.parseInt(usize, nums.next().?, 10);
+        try mappings.append(Mapping{ .dst_start = dst, .src_start = src, .length = len });
+    }
+
+    return mappings;
+}
+
+var section_names = [_][]const u8{
+    "soil",
+    "fertilizer",
+    "water",
+    "light",
+    "temperature",
+    "humidity",
+    "location",
+};
+
+fn mapSeed(seed: usize, mappings: ArrayList(ArrayList(Mapping))) usize {
+    var output: usize = seed;
+    for (mappings.items) |map_list| {
+        var mapped: bool = false;
+        for (map_list.items) |map| inner: {
+            if (mapped) break;
+            const out = mapValue(output, map);
+            if (!out.default) {
+                output = out.output;
+                mapped = true;
+                break :inner;
+            }
+        }
+    }
+
+    return output;
+}
+
 // ------------ Part 1 Solution ------------
 
 pub fn part1(input: []const u8, alloc: Allocator) !usize {
@@ -179,9 +229,18 @@ pub fn part1(input: []const u8, alloc: Allocator) !usize {
 
 // While this is technically correct, the brute-force solution can't be solved
 // in a reasonable amount of time.
-//
-// Here we go, AoC.
+// JK! Brute force can work :)
 pub fn part2(input: []const u8, alloc: Allocator) !usize {
+    var sections = [_][]const u8{
+        "seed-to-soil",
+        "soil-to-fertilizer",
+        "fertilizer-to-water",
+        "water-to-light",
+        "light-to-temperature",
+        "temperature-to-humidity",
+        "humidity-to-location",
+    };
+
     var ranges = ArrayList(usize).init(alloc);
     defer ranges.deinit();
 
@@ -194,43 +253,30 @@ pub fn part2(input: []const u8, alloc: Allocator) !usize {
         try ranges.append(try std.fmt.parseInt(usize, seed, 10));
     }
 
-    var seeds = ArrayList(usize).init(alloc);
-    defer seeds.deinit();
-
-    var idx: usize = 0;
-    while (2 * idx < ranges.items.len) : (idx += 2) {
-        const start: usize = ranges.items[2 * idx];
-        const length: usize = ranges.items[2 * idx + 1];
-        var seed_idx: usize = 0;
-        while (seed_idx < length) : (seed_idx += 1) {
-            try seeds.append(start + seed_idx);
-        }
+    // Pare the lists of mappings
+    var section_maps = ArrayList(ArrayList(Mapping)).init(alloc);
+    defer {
+        for (section_maps.items) |*map| map.deinit();
+        section_maps.deinit();
     }
 
-    var sections = [_][]const u8{
-        "seed-to-soil",
-        "soil-to-fertilizer",
-        "fertilizer-to-water",
-        "water-to-light",
-        "light-to-temperature",
-        "temperature-to-humidity",
-        "humidity-to-location",
-    };
-
-    var values: []usize = try seeds.toOwnedSlice();
-    defer alloc.free(values);
-
-    // Perform each mapping
     for (sections) |section| {
-        var tmp = try parseMapping(alloc, input, values, section);
-        alloc.free(values);
-        values = try tmp.toOwnedSlice();
+        try section_maps.append(try parseMappings(alloc, input, section));
     }
 
     var final_loc: usize = std.math.maxInt(usize);
-    for (values) |loc| {
-        if (loc < final_loc)
-            final_loc = loc;
+    var idx: usize = 0;
+    while (idx < ranges.items.len / 2) : (idx += 1) {
+        const start: usize = ranges.items[2 * idx];
+        const length: usize = ranges.items[2 * idx + 1];
+        std.debug.print("Range [{d}-{d}]\n", .{ start, start + length });
+        var seed_idx: usize = 0;
+        while (seed_idx < length) : (seed_idx += 1) {
+            const seed = mapSeed(start + seed_idx, section_maps);
+
+            if (seed < final_loc)
+                final_loc = seed;
+        }
     }
 
     return final_loc;
