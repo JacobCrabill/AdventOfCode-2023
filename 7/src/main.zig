@@ -120,20 +120,20 @@ fn printHand(hand: Hand) void {
 
 fn cardRank(c: u8) u8 {
     return switch (c) {
-        '2' => 2,
-        '3' => 3,
-        '4' => 4,
-        '5' => 5,
-        '6' => 6,
-        '7' => 7,
-        '8' => 8,
-        '9' => 9,
-        'T' => 10,
-        'J' => 11,
-        'Q' => 12,
-        'K' => 13,
-        'A' => 14,
-        else => 0,
+        '2' => 0,
+        '3' => 1,
+        '4' => 2,
+        '5' => 3,
+        '6' => 4,
+        '7' => 5,
+        '8' => 6,
+        '9' => 7,
+        'T' => 8,
+        'J' => 9,
+        'Q' => 10,
+        'K' => 11,
+        'A' => 12,
+        else => 255,
     };
 }
 
@@ -152,8 +152,8 @@ fn getHandType(hand: []const u8) HandType {
         3 => {
             for (counts) |count| {
                 if (count == 2) return .FullHouse;
-                return .ThreeOfAKind;
             }
+            return .ThreeOfAKind;
         },
         2 => {
             var pair_count: u8 = 0;
@@ -210,5 +210,5 @@ fn compareHands(_: void, hand1: Hand, hand2: Hand) bool {
     //     else => return false,
     // }
 
-    return false;
+    return true;
 }
