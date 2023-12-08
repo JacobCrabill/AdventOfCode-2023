@@ -37,7 +37,6 @@ test "part1 test input" {
 
     var alloc = std.testing.allocator;
     var res = try part1(Data.test_input, alloc);
-    //var res = try part1(Data.test_input2, alloc);
     log.warn("[Test] Part 1: {d}", .{res});
     try std.testing.expect(res == answer);
 }
@@ -82,17 +81,15 @@ pub fn part1(input: []const u8, alloc: Allocator) !usize {
 
         const hand = fields.next().?;
         const bid = try std.fmt.parseInt(usize, fields.next().?, 10);
-        const hand_type = getHandType(hand);
+        const hand_type = getHandType(hand, false);
 
         try hands.append(Hand{ .cards = hand, .bid = bid, .kind = hand_type });
     }
 
-    std.sort.heap(Hand, hands.items, {}, compareHands);
+    utils.heapSort(Hand, hands.items, comparator(cardRank));
 
     var sum: usize = 0;
     for (hands.items, 1..) |hand, i| {
-        // std.debug.print("{d}: ", .{i});
-        // printHand(hand);
         sum += i * hand.bid;
     }
 
@@ -112,17 +109,15 @@ pub fn part2(input: []const u8, alloc: Allocator) !usize {
 
         const hand = fields.next().?;
         const bid = try std.fmt.parseInt(usize, fields.next().?, 10);
-        const hand_type = getHandType2(hand);
+        const hand_type = getHandType(hand, true);
 
         try hands.append(Hand{ .cards = hand, .bid = bid, .kind = hand_type });
     }
 
-    std.sort.heap(Hand, hands.items, {}, compareHands2);
+    utils.heapSort(Hand, hands.items, comparator(cardRank2));
 
     var sum: usize = 0;
     for (hands.items, 1..) |hand, i| {
-        // std.debug.print("{d}: ", .{i});
-        // printHand(hand);
         sum += i * hand.bid;
     }
 
@@ -173,45 +168,13 @@ fn cardRank2(c: u8) u8 {
     };
 }
 
-fn getHandType(hand: []const u8) HandType {
-    var counts = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-    var max_count: u8 = 0;
-    for (cards, 0..) |card, i| {
-        counts[i] = @intCast(std.mem.count(u8, hand, &[1]u8{card}));
-        if (counts[i] > max_count)
-            max_count = counts[i];
-    }
-
-    switch (max_count) {
-        5 => return .FiveOfAKind,
-        4 => return .FourOfAKind,
-        3 => {
-            for (counts) |count| {
-                if (count == 2) return .FullHouse;
-            }
-            return .ThreeOfAKind;
-        },
-        2 => {
-            var pair_count: u8 = 0;
-            for (counts) |count| {
-                if (count == 2) pair_count += 1;
-            }
-            if (pair_count >= 2) return .TwoPair;
-            return .OnePair;
-        },
-        else => return .HighCard,
-    }
-
-    return .HighCard;
-}
-
-fn getHandType2(hand: []const u8) HandType {
+fn getHandType(hand: []const u8, use_joker: bool) HandType {
     var counts = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     var max_count: u8 = 0;
     var joker_count: u8 = 0;
     for (cards, 0..) |card, i| {
         const count: u8 = @intCast(std.mem.count(u8, hand, &[1]u8{card}));
-        if (card == 'J') {
+        if (use_joker and card == 'J') {
             // don't include Jokers in the max-card count
             joker_count = count;
         } else {
@@ -273,59 +236,20 @@ fn getHandType2(hand: []const u8) HandType {
 }
 
 /// Comparator fn for Hand types - returns whether hand1 < hand2
-fn compareHands(_: void, hand1: Hand, hand2: Hand) bool {
-    if (@intFromEnum(hand1.kind) < @intFromEnum(hand2.kind)) return true;
-    if (@intFromEnum(hand1.kind) > @intFromEnum(hand2.kind)) return false;
+fn comparator(comptime ranking: fn (u8) u8) fn (void, Hand, Hand) bool {
+    return struct {
+        pub fn lessThan(_: void, hand1: Hand, hand2: Hand) bool {
+            if (@intFromEnum(hand1.kind) < @intFromEnum(hand2.kind)) return true;
+            if (@intFromEnum(hand1.kind) > @intFromEnum(hand2.kind)) return false;
 
-    // Simple AoC version - compare cards in order
-    for (hand1.cards, 0..) |card1, i| {
-        const card2 = hand2.cards[i];
-        if (cardRank(card1) < cardRank(card2)) return true;
-        if (cardRank(card1) > cardRank(card2)) return false;
-    }
+            // Simple AoC version - compare cards in order
+            for (hand1.cards, 0..) |card1, i| {
+                const card2 = hand2.cards[i];
+                if (ranking(card1) < ranking(card2)) return true;
+                if (ranking(card1) > ranking(card2)) return false;
+            }
 
-    return true;
+            return true;
+        }
+    }.lessThan;
 }
-
-/// Comparator fn for Hand types with Jokers - returns whether hand1 < hand2
-fn compareHands2(_: void, hand1: Hand, hand2: Hand) bool {
-    if (@intFromEnum(hand1.kind) < @intFromEnum(hand2.kind)) return true;
-    if (@intFromEnum(hand1.kind) > @intFromEnum(hand2.kind)) return false;
-
-    for (hand1.cards, 0..) |card1, i| {
-        const card2 = hand2.cards[i];
-        if (cardRank2(card1) < cardRank2(card2)) return true;
-        if (cardRank2(card1) > cardRank2(card2)) return false;
-    }
-
-    return true;
-}
-
-// If we were playing real poker:
-//
-// fn getHighCard(hand: []const u8) u8 {
-//     var counts = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-//     var max_count: u8 = 0;
-//     var high_card: u8 = '2';
-//     for (cards, 0..) |card, i| {
-//         counts[i] = @intCast(utils.countScalar(u8, hand, card));
-//         if (counts[i] > max_count) {
-//             max_count = counts[i];
-//             high_card = card;
-//         }
-//     }
-//
-//     return high_card;
-// }
-//
-// switch (hand1.kind) {
-//     .FiveOfAKind => return hand1.cards[0] < hand2.cards[0],
-//     .FourOfAKind, .ThreeOfAKind, .OnePair, .HighCard => {
-//         const h1 = getHighCard(hand1.cards);
-//         const h2 = getHighCard(hand1.cards);
-//         return h1 < h2;
-//     },
-//     .TwoPair => {
-//     },
-//     else => return false,
-// }
