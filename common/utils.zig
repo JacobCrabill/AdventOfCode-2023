@@ -3,6 +3,12 @@ const std = @import("std");
 const TokenIterator = std.mem.TokenIterator(u8, .any);
 const SplitIterator = std.mem.SplitIterator(u8, .sequence);
 
+/// Simplified wrapper around Heap sort
+pub fn heapSort(T: anytype, items: []T, lessThan: fn (void, T, T) bool) void {
+    std.sort.heap(T, items, {}, lessThan);
+}
+
+/// Count occurances of 'value' within 'haystack'
 pub fn countScalar(T: anytype, haystack: []const T, value: T) usize {
     return std.mem.count(T, haystack, &[1]T{value});
 }
@@ -56,6 +62,7 @@ pub fn splitN(input: []const u8, delim: []const u8, idx: usize) ?[]const u8 {
     return last;
 }
 
+/// Split the input by any of the chars in 'delim', skipping empty separators
 pub fn tokenize(input: []const u8, delim: []const u8) TokenIterator {
     return std.mem.tokenizeAny(u8, input, delim);
 }
@@ -94,6 +101,7 @@ pub fn ns2sec(nanos: u64) f64 {
     return @as(f64, @floatFromInt(nanos)) / 1.0e9;
 }
 
+/// Start and return a simple Timer
 pub fn Timer() !std.time.Timer {
     return try std.time.Timer.start();
 }
