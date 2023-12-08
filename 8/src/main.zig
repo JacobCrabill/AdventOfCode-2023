@@ -196,7 +196,16 @@ pub fn part2(input: []const u8, alloc: Allocator) !usize {
         print("{d}: {d}\n", .{ i, c });
     }
 
-    // ...then just throw the results at Python's math.lcm()  ;)
+    return lcm(counts.items);
+}
 
-    return 0;
+fn lcm(nums: []usize) usize {
+    const math = utils.Math(usize);
+
+    var ans: usize = nums[0];
+    var i: usize = 1;
+    while (i < nums.len) : (i += 1) {
+        ans = math.lcm(ans, nums[i]);
+    }
+    return ans;
 }

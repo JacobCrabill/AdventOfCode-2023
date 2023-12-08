@@ -112,6 +112,33 @@ pub fn stdout(comptime fmt: []const u8, args: anytype) void {
     out.print(fmt, args) catch @panic("stdout failed!");
 }
 
+pub fn Math(comptime T: type) type {
+    return struct {
+        pub fn gcd(m_: T, n_: T) T {
+            var m = m_;
+            var n = n_;
+            var tmp: T = 0;
+            while (m > 0) {
+                tmp = m;
+                m = @mod(n, m);
+                n = tmp;
+            }
+            return n;
+        }
+
+        pub fn lcm(a: T, b: T) T {
+            return @divFloor(a, gcd(a, b)) * b;
+        }
+    };
+}
+
+test "LCM" {
+    const math = Math(usize);
+    const lcm: usize = 36;
+    try std.testing.expectEqual(lcm, math.lcm(12, 18));
+    try std.testing.expectEqual(lcm, math.lcm(18, 12));
+}
+
 // Classic Set container type, like C++'s std::undordered_set
 pub fn Set(comptime keytype: type) type {
     return struct {
