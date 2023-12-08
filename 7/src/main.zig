@@ -43,7 +43,7 @@ test "part1 test input" {
 }
 
 test "part2 test input" {
-    const answer: usize = 0;
+    const answer: usize = 5905;
 
     var alloc = std.testing.allocator;
     var res = try part2(Data.test_input, alloc);
@@ -91,14 +91,9 @@ pub fn part1(input: []const u8, alloc: Allocator) !usize {
 
     var sum: usize = 0;
     for (hands.items, 1..) |hand, i| {
-        //std.debug.print("{any}\n", .{hand});
-        std.debug.print("{d}: ", .{i});
-        printHand(hand);
+        // std.debug.print("{d}: ", .{i});
+        // printHand(hand);
         sum += i * hand.bid;
-    }
-
-    if (!std.sort.isSorted(Hand, hands.items, {}, compareHands)) {
-        @panic("Improper sort!!");
     }
 
     return sum;
@@ -107,9 +102,31 @@ pub fn part1(input: []const u8, alloc: Allocator) !usize {
 // ------------ Part 2 Solution ------------
 
 pub fn part2(input: []const u8, alloc: Allocator) !usize {
-    _ = alloc;
-    _ = input;
-    return 0;
+    var hands = ArrayList(Hand).init(alloc);
+    defer hands.deinit();
+
+    var lines = utils.lines(input);
+    while (lines.next()) |line| {
+        if (line.len == 0) break;
+        var fields = utils.tokenize(line, " \n");
+
+        const hand = fields.next().?;
+        const bid = try std.fmt.parseInt(usize, fields.next().?, 10);
+        const hand_type = getHandType2(hand);
+
+        try hands.append(Hand{ .cards = hand, .bid = bid, .kind = hand_type });
+    }
+
+    std.sort.heap(Hand, hands.items, {}, compareHands2);
+
+    var sum: usize = 0;
+    for (hands.items, 1..) |hand, i| {
+        // std.debug.print("{d}: ", .{i});
+        // printHand(hand);
+        sum += i * hand.bid;
+    }
+
+    return sum;
 }
 
 // ------------ Common Functions ------------
@@ -130,6 +147,25 @@ fn cardRank(c: u8) u8 {
         '9' => 7,
         'T' => 8,
         'J' => 9,
+        'Q' => 10,
+        'K' => 11,
+        'A' => 12,
+        else => 255,
+    };
+}
+
+fn cardRank2(c: u8) u8 {
+    return switch (c) {
+        '2' => 1,
+        '3' => 2,
+        '4' => 3,
+        '5' => 4,
+        '6' => 5,
+        '7' => 6,
+        '8' => 7,
+        '9' => 8,
+        'T' => 9,
+        'J' => 0, // Joker is worth the least, individually
         'Q' => 10,
         'K' => 11,
         'A' => 12,
@@ -169,19 +205,71 @@ fn getHandType(hand: []const u8) HandType {
     return .HighCard;
 }
 
-fn getHighCard(hand: []const u8) u8 {
+fn getHandType2(hand: []const u8) HandType {
     var counts = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     var max_count: u8 = 0;
-    var high_card: u8 = '2';
+    var joker_count: u8 = 0;
     for (cards, 0..) |card, i| {
-        counts[i] = @intCast(utils.countScalar(u8, hand, card));
-        if (counts[i] > max_count) {
-            max_count = counts[i];
-            high_card = card;
+        const count: u8 = @intCast(std.mem.count(u8, hand, &[1]u8{card}));
+        if (card == 'J') {
+            // don't include Jokers in the max-card count
+            joker_count = count;
+        } else {
+            counts[i] = count;
+            if (count > max_count)
+                max_count = count;
         }
     }
 
-    return high_card;
+    switch (max_count) {
+        5 => return .FiveOfAKind,
+        4 => {
+            if (joker_count > 0) return .FiveOfAKind;
+            return .FourOfAKind;
+        },
+        3 => {
+            switch (joker_count) {
+                2 => return .FiveOfAKind,
+                1 => return .FourOfAKind,
+                else => {},
+            }
+
+            for (counts) |count| {
+                if (count == 2) return .FullHouse;
+            }
+            return .ThreeOfAKind;
+        },
+        2 => {
+            var pair_count: u8 = 0;
+            for (counts) |count| {
+                if (count == 2) pair_count += 1;
+            }
+
+            switch (joker_count) {
+                3 => return .FiveOfAKind,
+                2 => return .FourOfAKind,
+                1 => {
+                    if (pair_count >= 2) return .FullHouse;
+                    return .ThreeOfAKind;
+                },
+                else => {},
+            }
+
+            if (pair_count >= 2) return .TwoPair;
+            return .OnePair;
+        },
+        else => {
+            switch (joker_count) {
+                4, 5 => return .FiveOfAKind,
+                3 => return .FourOfAKind,
+                2 => return .ThreeOfAKind,
+                1 => return .OnePair,
+                else => return .HighCard,
+            }
+        },
+    }
+
+    return .HighCard;
 }
 
 /// Comparator fn for Hand types - returns whether hand1 < hand2
@@ -192,23 +280,52 @@ fn compareHands(_: void, hand1: Hand, hand2: Hand) bool {
     // Simple AoC version - compare cards in order
     for (hand1.cards, 0..) |card1, i| {
         const card2 = hand2.cards[i];
-        // std.debug.print("{c}, {c}, {any}\n", .{ card1, card2, cardRank(card1) < cardRank(card2) });
         if (cardRank(card1) < cardRank(card2)) return true;
         if (cardRank(card1) > cardRank(card2)) return false;
     }
 
-    // If we were playing real poker:
-    // switch (hand1.kind) {
-    //     .FiveOfAKind => return hand1.cards[0] < hand2.cards[0],
-    //     .FourOfAKind, .ThreeOfAKind, .OnePair, .HighCard => {
-    //         const h1 = getHighCard(hand1.cards);
-    //         const h2 = getHighCard(hand1.cards);
-    //         return h1 < h2;
-    //     },
-    //     .TwoPair => {
-    //     },
-    //     else => return false,
-    // }
+    return true;
+}
+
+/// Comparator fn for Hand types with Jokers - returns whether hand1 < hand2
+fn compareHands2(_: void, hand1: Hand, hand2: Hand) bool {
+    if (@intFromEnum(hand1.kind) < @intFromEnum(hand2.kind)) return true;
+    if (@intFromEnum(hand1.kind) > @intFromEnum(hand2.kind)) return false;
+
+    for (hand1.cards, 0..) |card1, i| {
+        const card2 = hand2.cards[i];
+        if (cardRank2(card1) < cardRank2(card2)) return true;
+        if (cardRank2(card1) > cardRank2(card2)) return false;
+    }
 
     return true;
 }
+
+// If we were playing real poker:
+//
+// fn getHighCard(hand: []const u8) u8 {
+//     var counts = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+//     var max_count: u8 = 0;
+//     var high_card: u8 = '2';
+//     for (cards, 0..) |card, i| {
+//         counts[i] = @intCast(utils.countScalar(u8, hand, card));
+//         if (counts[i] > max_count) {
+//             max_count = counts[i];
+//             high_card = card;
+//         }
+//     }
+//
+//     return high_card;
+// }
+//
+// switch (hand1.kind) {
+//     .FiveOfAKind => return hand1.cards[0] < hand2.cards[0],
+//     .FourOfAKind, .ThreeOfAKind, .OnePair, .HighCard => {
+//         const h1 = getHighCard(hand1.cards);
+//         const h2 = getHighCard(hand1.cards);
+//         return h1 < h2;
+//     },
+//     .TwoPair => {
+//     },
+//     else => return false,
+// }

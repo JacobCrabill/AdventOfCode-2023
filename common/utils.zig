@@ -3,6 +3,10 @@ const std = @import("std");
 const TokenIterator = std.mem.TokenIterator(u8, .any);
 const SplitIterator = std.mem.SplitIterator(u8, .sequence);
 
+pub fn countScalar(T: anytype, haystack: []const T, value: T) usize {
+    return std.mem.count(T, haystack, &[1]T{value});
+}
+
 /// Split the input by newline chars "\n"
 /// Note: This keeps empty lines
 pub fn lines(input: []const u8) SplitIterator {
