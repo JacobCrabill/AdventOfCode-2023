@@ -1,7 +1,10 @@
 const std = @import("std");
 
 /// Combination Build Module and name
-const Module = std.build.ModuleDependency;
+const Module = struct {
+    name: []const u8,
+    module: *std.Build.Module,
+};
 
 pub fn build(b: *std.Build) void {
     // Standard release options allow the person running `zig build` to select
@@ -19,8 +22,8 @@ pub fn build(b: *std.Build) void {
         .optimize = .ReleaseSafe, // Just set ReleaseSafe; not much use in Debug
         .target = target,
     });
-    exe.addModule(data.name, data.module);
-    exe.addModule(utils.name, utils.module);
+    exe.root_module.addImport(data.name, data.module);
+    exe.root_module.addImport(utils.name, utils.module);
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
@@ -40,7 +43,7 @@ pub fn build(b: *std.Build) void {
 fn createModule(b: *std.Build, name: []const u8, source_file: []const u8) Module {
     return Module{
         .name = name,
-        .module = b.createModule(.{ .source_file = .{ .path = source_file } }),
+        .module = b.createModule(.{ .root_source_file = .{ .path = source_file } }),
     };
 }
 
@@ -57,7 +60,7 @@ fn addTest(b: *std.Build, cmd: []const u8, description: []const u8, path: []cons
         .optimize = optimize,
     });
     for (modules) |mod| {
-        test_exe.addModule(mod.name, mod.module);
+        test_exe.root_module.addImport(mod.name, mod.module);
     }
 
     const run_step = b.addRunArtifact(test_exe);
